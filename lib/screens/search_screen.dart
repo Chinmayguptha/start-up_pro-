@@ -16,7 +16,7 @@ class _SearchScreenState extends State<SearchScreen> {
   List<dynamic> _filteredCompanies = dummyCompanies;
   String _selectedStage = 'All';
 
-  List<String> get _stages => ['All', 'Seed', 'Series A', 'Series B', 'Series C'];
+  List<String> get _stages => ['All', 'Series A', 'Series B', 'Series C'];
 
   void _filterCompanies(String query) {
     setState(() {

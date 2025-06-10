@@ -18,142 +18,99 @@ class CompanyCard extends StatefulWidget {
 }
 
 class _CompanyCardState extends State<CompanyCard> {
-  bool _isExpanded = false;
   int? _selectedFeatureIndex;
-  Widget? _expandedContent;
-  final ScrollController _scrollController = ScrollController();
 
   final List<Map<String, dynamic>> _features = [
-    {'icon': Icons.handshake, 'label': 'Partnerships'},
-    {'icon': Icons.attach_money, 'label': 'Funding'},
     {'icon': Icons.person, 'label': 'CEO'},
     {'icon': Icons.group, 'label': 'Team'},
     {'icon': Icons.location_on, 'label': 'Location'},
     {'icon': Icons.contact_phone, 'label': 'Contact'},
+    {'icon': Icons.handshake, 'label': 'Partnerships'},
+    {'icon': Icons.attach_money, 'label': 'Funding'},
   ];
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onFeatureTap(int index) {
-    setState(() {
-      _selectedFeatureIndex = index;
-      _expandedContent = _buildExpandedContent(index);
-      _isExpanded = true;
-    });
-  }
-
-  Widget _buildExpandedContent(int index) {
+  void _showFeatureDetails(BuildContext context, int index) {
     final title = _features[index]['label'];
-    final icon = _features[index]['icon'];
-
-    Widget content;
+    String content = '';
+    
     switch (index) {
       case 0:
-        content = Text(
-          widget.company.partnerships,
-          style: const TextStyle(fontSize: 14),
-        );
+        content = widget.company.ceo;
         break;
       case 1:
-        content = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ...widget.company.fundingRounds.map((round) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        content = widget.company.team;
+        break;
+      case 2:
+        content = widget.company.location;
+        break;
+      case 3:
+        content = widget.company.contact;
+        break;
+      case 4:
+        content = widget.company.partnerships;
+        break;
+      case 5:
+        if (widget.company.fundingRounds.isNotEmpty) {
+          content = widget.company.fundingRounds.map((round) => 
+            '${round.round}: \$${round.amount}M (${round.date})'
+          ).join('\n');
+        }
+        break;
+    }
+
+    if (content.isEmpty) {
+      content = 'No information available';
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
+                  Icon(_features[index]['icon'], size: 24, color: Theme.of(context).primaryColor),
+                  const SizedBox(width: 8),
                   Text(
-                    round.round,
+                    title,
                     style: const TextStyle(
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '\$${round.amount}M - ${round.date}',
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                  Text(
-                    'Lead Investor: ${round.leadInvestor}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
                     ),
                   ),
                 ],
               ),
-            )).toList(),
-          ],
-        );
-        break;
-      case 2:
-        content = Text(
-          widget.company.ceo,
-          style: const TextStyle(fontSize: 14),
-        );
-        break;
-      case 3:
-        content = Text(
-          widget.company.team,
-          style: const TextStyle(fontSize: 14),
-        );
-        break;
-      case 4:
-        content = Text(
-          widget.company.location,
-          style: const TextStyle(fontSize: 14),
-        );
-        break;
-      case 5:
-        content = Text(
-          widget.company.contact,
-          style: const TextStyle(fontSize: 14),
-        );
-        break;
-      default:
-        content = const Text('No information available.');
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 20, color: Theme.of(context).primaryColor),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 16),
+              Text(content),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
-        content,
-      ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
     return Card(
       elevation: 2,
       margin: EdgeInsets.zero,
-      child: SingleChildScrollView(
+      child: InkWell(
+        onTap: () => _showCompanyDetails(context),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -204,59 +161,176 @@ class _CompanyCardState extends State<CompanyCard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 110,
-                child: GridView.count(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 4,
-                  mainAxisSpacing: 4,
-                  childAspectRatio: 3.5,
-                  physics: const NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  children: [
-                    _buildFeatureItem(Icons.handshake, 'Partnerships', widget.company.partnerships),
-                    _buildFeatureItem(Icons.attach_money, 'Funding', widget.company.funding),
-                    _buildFeatureItem(Icons.person, 'CEO', widget.company.ceo),
-                    _buildFeatureItem(Icons.group, 'Team', widget.company.team),
-                    _buildFeatureItem(Icons.location_on, 'Location', widget.company.location),
-                    _buildFeatureItem(Icons.contact_phone, 'Contact', widget.company.contact),
-                  ],
-                ),
+              const SizedBox(height: 16),
+              GridView.count(
+                crossAxisCount: 3,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                childAspectRatio: 2.5,
+                children: List.generate(_features.length, (index) {
+                  final feature = _features[index];
+                  return InkWell(
+                    onTap: () => _showFeatureDetails(context, index),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _selectedFeatureIndex == index
+                            ? Theme.of(context).primaryColor.withOpacity(0.1)
+                            : Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _selectedFeatureIndex == index
+                              ? Theme.of(context).primaryColor
+                              : Theme.of(context).dividerColor,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            feature['icon'],
+                            size: 16,
+                            color: _selectedFeatureIndex == index
+                                ? Theme.of(context).primaryColor
+                                : Theme.of(context).iconTheme.color,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            feature['label'],
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: _selectedFeatureIndex == index
+                                  ? Theme.of(context).primaryColor
+                                  : Theme.of(context).textTheme.bodySmall?.color,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
               ),
-              if (_isExpanded && _expandedContent != null) ...[
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCompanyDetails(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Text(
+                        widget.company.name[0],
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.company.name,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.company.domain,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildDetailSection('CEO', widget.company.ceo),
+              _buildDetailSection('Team', widget.company.team),
+              _buildDetailSection('Location', widget.company.location),
+              _buildDetailSection('Contact', widget.company.contact),
+              _buildDetailSection('Partnerships', widget.company.partnerships),
+              if (widget.company.fundingRounds.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 8),
-                Container(
-                  constraints: const BoxConstraints(maxHeight: 200),
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    child: _expandedContent!,
+                const Text(
+                  'Funding History',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                const SizedBox(height: 8),
+                ...widget.company.fundingRounds.map((round) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        round.round,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '\$${round.amount}M - ${round.date}',
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                      if (round.leadInvestor != null)
+                        Text(
+                          'Lead Investor: ${round.leadInvestor}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                    ],
+                  ),
+                )).toList(),
               ],
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {
-                    setState(() {
-                      _isExpanded = !_isExpanded;
-                    });
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CompanyDetailScreen(company: widget.company),
+                    ));
                   },
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    _isExpanded ? 'View Less' : 'View Details',
-                    style: TextStyle(
-                      color: Theme.of(context).primaryColor,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  child: const Text('View Full Details'),
                 ),
               ),
             ],
@@ -266,82 +340,28 @@ class _CompanyCardState extends State<CompanyCard> {
     );
   }
 
-  Widget _buildFeatureItem(IconData icon, String label, String content) {
-    String displayContent = content;
-    if (label == 'Funding') {
-      final totalFunding = widget.company.fundingRounds.fold<double>(
-        0,
-        (sum, round) => sum + round.amount,
-      );
-      displayContent = '\$${totalFunding.toStringAsFixed(1)}M';
-    }
-
-    return InkWell(
-      onTap: () => _onFeatureTap(_features.indexWhere((feature) => feature['label'] == label)),
-      borderRadius: BorderRadius.circular(4),
-      child: Container(
-        padding: EdgeInsets.zero,
-        decoration: BoxDecoration(
-          color: _selectedFeatureIndex == _features.indexWhere((feature) => feature['label'] == label)
-              ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-              : Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(
-            color: _selectedFeatureIndex == _features.indexWhere((feature) => feature['label'] == label)
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.outline.withOpacity(0.2),
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  size: 8,
-                  color: _selectedFeatureIndex == _features.indexWhere((feature) => feature['label'] == label)
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurface,
-                ),
-                const SizedBox(width: 2),
-                Flexible(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 6,
-                        fontWeight: FontWeight.w500,
-                        color: _selectedFeatureIndex == _features.indexWhere((feature) => feature['label'] == label)
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.onSurface,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              ],
+  Widget _buildDetailSection(String title, String content) {
+    if (content.isEmpty) return const SizedBox.shrink();
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
             ),
-            if (displayContent.isNotEmpty)
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    displayContent,
-                    style: TextStyle(
-                      fontSize: 5,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            content,
+            style: const TextStyle(fontSize: 14),
+          ),
+        ],
       ),
     );
   }

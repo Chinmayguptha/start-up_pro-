@@ -23,7 +23,7 @@ class _AllCompaniesScreenState extends State<AllCompaniesScreen> {
   String _selectedStage = 'All';
   String _searchQuery = '';
 
-  List<String> get _stages => ['All', 'Seed', 'Series A', 'Series B', 'Series C'];
+  List<String> get _stages => ['All', 'Series A', 'Series B', 'Series C'];
 
   List<CompanyModel> get _filteredCompanies {
     return widget.companies.where((company) {
