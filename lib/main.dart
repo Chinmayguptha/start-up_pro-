@@ -17,27 +17,18 @@ import 'screens/job_board_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  if (kIsWeb) {
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: "AIzaSyDg6QP2FBWAp0sxqegB40k1pTnw_c-kDng",
-        appId: "1:411870907427:web:dd9fc217351d0895333596",
-        messagingSenderId: "411870907427",
-        projectId: "startuphubapp",
-        authDomain: "startuphubapp.firebaseapp.com",
-        storageBucket: "startuphubapp.firebasestorage.app",
-        measurementId: "G-2EYBERMXQH",
-      ),
-    );
-  } else {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  }
-  
-  if (kIsWeb) {
-    // Web-specific initialization
-    debugPrint('Running on web platform');
+  try {
+    if (kIsWeb) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.web,
+      );
+    } else {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } catch (e) {
+    debugPrint('Error initializing Firebase: $e');
   }
   
   runApp(const MyApp());

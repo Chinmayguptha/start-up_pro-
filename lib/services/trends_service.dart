@@ -117,13 +117,47 @@ class TrendsService {
 
   Map<String, dynamic> _getDummyMarketData() {
     final now = DateTime.now();
+    final random = Random();
+    
+    // Generate more realistic market data with natural fluctuations
+    double baseValue = 100.0;
+    double trend = 0.5; // Overall upward trend
+    double volatility = 2.0; // Daily volatility
+    List<double> values = [];
+    
+    for (int i = 0; i < 30; i++) {
+      // Add random walk component
+      double randomWalk = (random.nextDouble() - 0.5) * volatility;
+      
+      // Add some momentum (previous day's movement influences next day)
+      double momentum = i > 0 ? (values[i-1] - (i > 1 ? values[i-2] : baseValue)) * 0.3 : 0;
+      
+      // Add some mean reversion (tendency to return to trend)
+      double meanReversion = (baseValue + (i * trend) - (i > 0 ? values[i-1] : baseValue)) * 0.1;
+      
+      // Calculate new value
+      double newValue = baseValue + (i * trend) + randomWalk + momentum + meanReversion;
+      
+      // Add occasional market events (larger movements)
+      if (random.nextDouble() < 0.1) { // 10% chance of market event
+        newValue += (random.nextDouble() - 0.5) * volatility * 3;
+      }
+      
+      values.add(newValue);
+    }
+    
+    // Calculate percentage change
+    double firstValue = values.first;
+    double lastValue = values.last;
+    double change = ((lastValue - firstValue) / firstValue) * 100;
+    
     return {
       'dates': List.generate(30, (index) {
         final date = now.subtract(Duration(days: 29 - index));
         return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       }),
-      'values': List.generate(30, (index) => 100 + (index * 0.5) + (index % 3 == 0 ? -1 : 1)),
-      'change': '2.5',
+      'values': values,
+      'change': change.toStringAsFixed(2),
     };
   }
 } 

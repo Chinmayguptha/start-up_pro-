@@ -120,8 +120,13 @@ class _TrendsScreenState extends State<TrendsScreen> with SingleTickerProviderSt
     final dates = _marketData['dates'] as List<String>;
     final values = _marketData['values'] as List<double>;
     final change = _marketData['change'] as String;
+    final isPositive = double.parse(change) >= 0;
 
     return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -137,25 +142,62 @@ class _TrendsScreenState extends State<TrendsScreen> with SingleTickerProviderSt
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
-                  '${change}%',
-                  style: TextStyle(
-                    color: double.parse(change) >= 0 ? Colors.green : Colors.red,
-                    fontWeight: FontWeight.bold,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isPositive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isPositive ? Colors.green : Colors.red,
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                        color: isPositive ? Colors.green : Colors.red,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${change}%',
+                        style: TextStyle(
+                          color: isPositive ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             SizedBox(
-              height: 200,
+              height: 250,
               child: LineChart(
                 LineChartData(
-                  gridData: FlGridData(show: false),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: true,
+                    horizontalInterval: 10,
+                    verticalInterval: 5,
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: Colors.grey.withOpacity(0.2),
+                        strokeWidth: 1,
+                      );
+                    },
+                    getDrawingVerticalLine: (value) {
+                      return FlLine(
+                        color: Colors.grey.withOpacity(0.2),
+                        strokeWidth: 1,
+                      );
+                    },
+                  ),
                   titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
+                    show: true,
                     rightTitles: AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
                     ),
@@ -165,15 +207,52 @@ class _TrendsScreenState extends State<TrendsScreen> with SingleTickerProviderSt
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
+                        reservedSize: 30,
+                        interval: 5,
                         getTitlesWidget: (value, meta) {
                           if (value.toInt() >= dates.length) return const Text('');
                           final date = dates[value.toInt()];
-                          return Text(date.substring(5)); // Show only month-day
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              date.substring(5), // Show only month-day
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
+                            ),
+                          );
                         },
                       ),
                     ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: 20,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            value.toInt().toString(),
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          );
+                        },
+                        reservedSize: 40,
+                      ),
+                    ),
                   ),
-                  borderData: FlBorderData(show: false),
+                  borderData: FlBorderData(
+                    show: true,
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.withOpacity(0.2)),
+                      left: BorderSide(color: Colors.grey.withOpacity(0.2)),
+                    ),
+                  ),
+                  minX: 0,
+                  maxX: (dates.length - 1).toDouble(),
+                  minY: values.reduce((a, b) => a < b ? a : b) - 5,
+                  maxY: values.reduce((a, b) => a > b ? a : b) + 5,
                   lineBarsData: [
                     LineChartBarData(
                       spots: List.generate(
@@ -181,16 +260,87 @@ class _TrendsScreenState extends State<TrendsScreen> with SingleTickerProviderSt
                         (index) => FlSpot(index.toDouble(), values[index]),
                       ),
                       isCurved: true,
-                      color: Theme.of(context).primaryColor,
+                      gradient: LinearGradient(
+                        colors: [
+                          isPositive ? Colors.green : Colors.red,
+                          isPositive ? Colors.green.withOpacity(0.5) : Colors.red.withOpacity(0.5),
+                        ],
+                      ),
                       barWidth: 3,
                       isStrokeCapRound: true,
-                      dotData: FlDotData(show: false),
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) {
+                          return FlDotCirclePainter(
+                            radius: 4,
+                            color: isPositive ? Colors.green : Colors.red,
+                            strokeWidth: 2,
+                            strokeColor: Colors.white,
+                          );
+                        },
+                      ),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            isPositive ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                            isPositive ? Colors.green.withOpacity(0.0) : Colors.red.withOpacity(0.0),
+                          ],
+                        ),
                       ),
                     ),
                   ],
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      tooltipBgColor: Colors.blueGrey.withOpacity(0.8),
+                      getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                        return touchedBarSpots.map((barSpot) {
+                          final date = dates[barSpot.x.toInt()];
+                          final value = barSpot.y;
+                          return LineTooltipItem(
+                            '$date\n',
+                            const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'Value: ${value.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                              ),
+                            ],
+                          );
+                        }).toList();
+                      },
+                    ),
+                    handleBuiltInTouches: true,
+                    getTouchedSpotIndicator: (LineChartBarData barData, List<int> spotIndexes) {
+                      return spotIndexes.map((spotIndex) {
+                        return TouchedSpotIndicatorData(
+                          FlLine(
+                            color: isPositive ? Colors.green : Colors.red,
+                            strokeWidth: 2,
+                            dashArray: [5, 5],
+                          ),
+                          FlDotData(
+                            getDotPainter: (spot, percent, barData, index) {
+                              return FlDotCirclePainter(
+                                radius: 6,
+                                color: isPositive ? Colors.green : Colors.red,
+                                strokeWidth: 2,
+                                strokeColor: Colors.white,
+                              );
+                            },
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
                 ),
               ),
             ),
